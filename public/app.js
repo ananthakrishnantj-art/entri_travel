@@ -36,7 +36,7 @@ form.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    const data = await readApiResponse(response);
     if (!response.ok) {
       throw new Error(data.error || "Unable to create a plan.");
     }
@@ -61,6 +61,21 @@ copyButton.addEventListener("click", async () => {
     copyButton.textContent = "Copy";
   }, 1400);
 });
+
+async function readApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const message = await response.text();
+  const preview = message.replace(/\s+/g, " ").trim().slice(0, 120);
+  throw new Error(
+    preview.startsWith("The page c")
+      ? "The backend route /api/plan was not found. Run the Node server with npm start, or deploy this as a backend app instead of a static site."
+      : `The server returned a non-JSON response: ${preview || response.statusText}`
+  );
+}
 
 function setLoading(isLoading) {
   form.querySelector("button[type='submit']").disabled = isLoading;

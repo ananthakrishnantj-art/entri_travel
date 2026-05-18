@@ -21,6 +21,17 @@ npm start
 
 4. Open `http://localhost:3000`.
 
+## Deploy on Vercel
+
+Add these environment variables in Vercel Project Settings:
+
+```env
+GEMINI_API_KEY=your_google_ai_studio_key_here
+GEMINI_MODEL=gemini-2.5-flash-lite
+```
+
+The deployed frontend calls `/api/plan`, which is handled by `api/plan.js` as a Vercel serverless function.
+
 ## Safety choices
 
 - API key stays in `.env` on the backend.
