@@ -10,8 +10,8 @@ const publicDir = join(__dirname, "public");
 loadDotEnv();
 
 const PORT = Number(process.env.PORT || 3000);
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const GEMINI_API_KEY = getGeminiApiKey();
+const GEMINI_MODEL = normalizeGeminiModel(process.env.GEMINI_MODEL);
 const MAX_BODY_BYTES = 12_000;
 const REQUEST_TIMEOUT_MS = 25_000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -89,7 +89,7 @@ async function handlePlanRequest(req, res) {
   }
 
   const payload = buildGeminiPayload(validation.data);
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -97,8 +97,7 @@ async function handlePlanRequest(req, res) {
     const geminiResponse = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(payload),
       signal: controller.signal
@@ -108,7 +107,7 @@ async function handlePlanRequest(req, res) {
 
     if (!geminiResponse.ok) {
       console.error("Gemini error:", responseJson);
-      sendJson(res, 502, { error: "Gemini could not create the itinerary right now." });
+      sendJson(res, 502, { error: getGeminiErrorMessage(geminiResponse.status, responseJson) });
       return;
     }
 
@@ -210,6 +209,31 @@ function validateTripInput(input) {
 function cleanText(value, maxLength) {
   if (typeof value !== "string") return "";
   return value.replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function getGeminiApiKey() {
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMNI_API_KEY;
+}
+
+function normalizeGeminiModel(value) {
+  const raw = String(value || "").trim();
+  const simplified = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (!raw || simplified === "geminiflashlite" || simplified === "gemniflashlite" || simplified === "flashlite" || simplified === "geminiflashliteapi") {
+    return "gemini-2.5-flash-lite";
+  }
+
+  if (simplified === "gemini20flashlite" || simplified === "gemini2flashlite") {
+    return "gemini-2.0-flash-lite";
+  }
+
+  return raw;
+}
+
+function getGeminiErrorMessage(status, responseJson) {
+  const message = responseJson?.error?.message || "Gemini could not create the itinerary right now.";
+  const cleaned = message.replace(/API key=[^&\s]+/gi, "API key=[hidden]").slice(0, 220);
+  return `Gemini API error ${status}: ${cleaned}`;
 }
 
 async function readJsonBody(req) {

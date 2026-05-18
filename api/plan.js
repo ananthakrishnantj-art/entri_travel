@@ -1,4 +1,3 @@
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const REQUEST_TIMEOUT_MS = 25_000;
 
 export default async function handler(req, res) {
@@ -8,7 +7,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed." });
   }
 
-  if (!process.env.GEMINI_API_KEY) {
+  const apiKey = getGeminiApiKey();
+  const model = normalizeGeminiModel(process.env.GEMINI_MODEL);
+
+  if (!apiKey) {
     return res.status(500).json({ error: "Server is missing GEMINI_API_KEY." });
   }
 
@@ -21,12 +23,11 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
     const geminiResponse = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": process.env.GEMINI_API_KEY
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(buildGeminiPayload(validation.data)),
       signal: controller.signal
@@ -36,7 +37,7 @@ export default async function handler(req, res) {
 
     if (!geminiResponse.ok) {
       console.error("Gemini error:", responseJson);
-      return res.status(502).json({ error: "Gemini could not create the itinerary right now." });
+      return res.status(502).json({ error: getGeminiErrorMessage(geminiResponse.status, responseJson) });
     }
 
     const plan = responseJson?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
@@ -44,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "Gemini returned an empty plan. Try changing the trip details." });
     }
 
-    return res.status(200).json({ plan, model: GEMINI_MODEL });
+    return res.status(200).json({ plan, model });
   } catch (error) {
     if (error.name === "AbortError") {
       return res.status(504).json({ error: "The planner took too long. Please try a shorter trip." });
@@ -66,6 +67,31 @@ function parseBody(body) {
   } catch {
     return {};
   }
+}
+
+function getGeminiApiKey() {
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMNI_API_KEY;
+}
+
+function normalizeGeminiModel(value) {
+  const raw = String(value || "").trim();
+  const simplified = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (!raw || simplified === "geminiflashlite" || simplified === "gemniflashlite" || simplified === "flashlite" || simplified === "geminiflashliteapi") {
+    return "gemini-2.5-flash-lite";
+  }
+
+  if (simplified === "gemini20flashlite" || simplified === "gemini2flashlite") {
+    return "gemini-2.0-flash-lite";
+  }
+
+  return raw;
+}
+
+function getGeminiErrorMessage(status, responseJson) {
+  const message = responseJson?.error?.message || "Gemini could not create the itinerary right now.";
+  const cleaned = message.replace(/API key=[^&\s]+/gi, "API key=[hidden]").slice(0, 220);
+  return `Gemini API error ${status}: ${cleaned}`;
 }
 
 function buildGeminiPayload(trip) {
