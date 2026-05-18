@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Travel Planner</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">&#9992;</span>
+        <div>
+          <h1>Travel Planner</h1>
+          <p>AI-powered itinerary generator</p>
+        </div>
+      </div>
+      <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle theme" title="Toggle theme">&#9788;</button>
+    </header>
+
+    <main class="shell">
+      <section class="planner-panel" aria-labelledby="plannerTitle">
+        <form id="tripForm" class="trip-form">
+          <div class="form-heading">
+            <div>
+              <h2 id="plannerTitle">Plan Your Trip</h2>
+              <p>Fill in the details to get a personalised day-by-day itinerary</p>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label>
+              <span>Destination*</span>
+              <input name="destination" type="text" placeholder="e.g. Munnar, Paris" maxlength="80" required />
+            </label>
+
+            <label>
+              <span>Starting City*</span>
+              <input name="startingCity" type="text" placeholder="e.g. Kochi, Delhi" maxlength="80" required />
+            </label>
+
+            <label>
+              <span>Days (1-30)*</span>
+              <input name="days" type="number" min="1" max="30" placeholder="e.g. 5" required />
+            </label>
+
+            <label>
+              <span>Group Size*</span>
+              <input name="groupSize" type="number" min="1" max="50" placeholder="e.g. 2" required />
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>Budget Level*</legend>
+            <div class="segmented budget-options">
+              <label>
+                <input type="radio" name="budget" value="low" required />
+                <span>Low<small>~&#8377;1k-2k/day</small></span>
+              </label>
+              <label>
+                <input type="radio" name="budget" value="medium" checked />
+                <span>Medium<small>~&#8377;3k-6k/day</small></span>
+              </label>
+              <label>
+                <input type="radio" name="budget" value="high" />
+                <span>High<small>~&#8377;8k+/day</small></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Trip Type (Optional)</legend>
+            <div class="chips">
+              <label><input type="radio" name="tripType" value="adventure" /><span>Adventure</span></label>
+              <label><input type="radio" name="tripType" value="cultural" /><span>Cultural</span></label>
+              <label><input type="radio" name="tripType" value="relaxation" /><span>Relaxation</span></label>
+              <label><input type="radio" name="tripType" value="family" /><span>Family</span></label>
+              <label><input type="radio" name="tripType" value="honeymoon" /><span>Honeymoon</span></label>
+            </div>
+          </fieldset>
+
+          <label class="notes-field">
+            <span>Interests or Notes</span>
+            <textarea name="notes" rows="3" maxlength="500" placeholder="Food, temples, beaches, accessible travel, slow pace..."></textarea>
+          </label>
+
+          <button class="primary-button" type="submit">
+            <span id="buttonText">Plan My Trip &rarr;</span>
+            <span class="spinner" id="spinner" hidden></span>
+          </button>
+        </form>
+      </section>
+
+      <section class="result-panel" aria-live="polite">
+        <div class="result-header">
+          <div>
+            <h2>Your Itinerary</h2>
+            <p id="modelLabel">Generated securely from the backend</p>
+          </div>
+          <button class="copy-button" id="copyButton" type="button" disabled>Copy</button>
+        </div>
+        <div id="status" class="status">Your plan will appear here after you submit the form.</div>
+        <article id="planOutput" class="plan-output" hidden></article>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "ai-travel-planner-gemini",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simple AI travel planner with a safe Gemini Flash-Lite backend.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
